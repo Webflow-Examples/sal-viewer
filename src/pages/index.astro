@@ -1,17 +1,60 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
+const CLIENT_ID = import.meta.env.CLIENT_ID;
+const REDIRECT_URL = import.meta.env.REDIRECT_URL;
+
+const getAuthURL = () => {
+  	let params = new URLSearchParams();
+  	params.set('client_id', CLIENT_ID);
+  	params.set('redirect_url', REDIRECT_URL);
+  	params.set('response_type','code');
+  	params.set('scope','sites:read site_activity:read');
+  	let url = 'https://webflow.com/oauth/authorize?' + params.toString();
+	return url;
+}
+
+let error = await Astro.session?.get('error');
+console.log('error', error);
+
 // temp shit
 let hits = await Astro.session?.get('hits');
 if(!hits) hits = 0;
 
 Astro.session?.set('hits', ++hits);
-
+console.log(hits);
 ---
 
-<BaseLayout pageTitle="Site Access Log Viewer" bodyClass="login">
+<BaseLayout pageTitle="Site Activity Log Viewer" bodyClass="login">
 
-	<h1>Stuff</h1>
-	<div>{hits}</div>
+	  <div class="login-card">
+
+    <div class="wordmark">
+      <div class="wordmark-title">Site Activity Log Viewer</div>
+      <div class="wordmark-sub">Site audit &amp; reporting tool</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="login-copy">
+      <h2>See everything that's happened on your Webflow site.</h2>
+      <p>
+		This tool connects to and analyzes the site activity log for your Webflow site. Currently
+		this feature is only available in <strong>ENTERPRISE</strong> sites.
+      </p>
+    </div>
+
+    <a href={getAuthURL()} class="btn-webflow">
+      <span class="wf-mark"></span>
+      Login with Webflow
+    </a>
+
+    <div class="login-note">
+      You'll be redirected to Webflow to authorize access.<br>
+      Only read-level activity log data is requested.
+    </div>
+
+  </div>
+
 
 </BaseLayout>

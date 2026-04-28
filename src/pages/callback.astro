@@ -1,0 +1,41 @@
+---
+const CLIENT_ID = import.meta.env.CLIENT_ID;
+const CLIENT_SECRET = import.meta.env.CLIENT_SECRET;
+const REDIRECT_URL = import.meta.env.REDIRECT_URL;
+
+const code = Astro.url.searchParams.get('code') || '';
+const error = Astro.url.searchParams.get('error') || '';
+
+//const base = import.meta.env.BASE_URL;
+
+if(error !== '') {
+    // todo, handle error 
+    // maybe a flash msg and back to index
+    console.error('Error!!', error);
+    Astro.session?.set('error', error);
+    return Astro.redirect('/');
+    
+}
+
+// get our access token
+const params = new URLSearchParams();
+params.append('client_id', CLIENT_ID);
+params.append('client_secret', CLIENT_SECRET);
+params.append('grant_type', 'authorization_code');
+params.append('code', code);
+
+
+const atReq = await fetch('https://api.webflow.com/oauth/access_token', {
+    method: 'POST',
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type2': 'application/x-www-form-urlencoded'
+    }, 
+    body: params
+});
+
+const at = await atReq.json();
+console.log('at', at);
+Astro.session?.set('access_token', at.access_token);
+return Astro.redirect('/sites');
+---

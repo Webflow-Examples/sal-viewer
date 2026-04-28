@@ -1,0 +1,314 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const SITE_ID = Astro.url.searchParams.get('siteId');
+const SITE_NAME = Astro.url.searchParams.get('siteName');
+
+---
+
+<BaseLayout pageTitle="Activity Log Dashboard">
+
+  <header class="header">
+    <div class="header-left">
+      <div class="header-title">Activity Log</div>
+      <div class="header-site">{SITE_NAME} &mdash; {SITE_ID}</div>
+    </div>
+    <div class="header-meta" id="headerMeta">Loading&hellip;</div>
+  </header>
+
+  <main class="main">
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="dashboard-grid">
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Events by type</span>
+          </div>
+          <div class="panel-body">
+            <div class="bar-chart" id="barChart"></div>
+          </div>
+        </div>
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Activity log</span>
+            <span id="tableCount" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);"></span>
+          </div>
+          <div class="filters" id="filters"></div>
+          <div class="log-table-wrap" style="max-height:520px;overflow-y:auto;">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Event</th>
+                  <th>Operation</th>
+                  <th>Resource</th>
+                  <th>User</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Users</span>
+          </div>
+          <div class="panel-body">
+            <div class="user-list" id="userList"></div>
+          </div>
+        </div>
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Timeline</span>
+            <div class="pager" id="timelinePager"></div>
+          </div>
+          <div class="panel-body" style="padding:16px 20px;">
+            <div class="timeline" id="timeline"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+</BaseLayout>
+
+<script>
+//const TOTAL_EVENTS = 546;
+let LOG_DATA = [];
+let TOTAL_EVENTS = null;
+
+const EVENT_CONFIG = {
+  symbols_modified:       { color: '#5b9bd5' },
+  styles_modified:        { color: '#6ab187' },
+  backup_created:         { color: '#888882' },
+  page_dom_modified:      { color: '#f5a623' },
+  site_published:         { color: '#c97ab2' },
+  page_created:           { color: '#5bbdbd' },
+  cms_collection:         { color: '#d96c6c' },
+  page_settings_modified: { color: '#7a7670' },
+  page_renamed:           { color: '#7a7670' },
+};
+
+function eventColor(evt) { return (EVENT_CONFIG[evt] || {}).color || '#7a7670'; }
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function fmtDateTime(iso) { return fmtDate(iso) + ' ' + fmtTime(iso); }
+
+function dayKey(iso) { return iso.slice(0, 10); }
+
+function countBy(arr, fn) {
+  return arr.reduce((acc, item) => {
+    const k = fn(item);
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+let activeFilter = 'all';
+let timelinePage = 0;
+const TIMELINE_PAGE_SIZE = 5;
+
+function filteredData() {
+  return activeFilter === 'all' ? LOG_DATA : LOG_DATA.filter(e => e.event === activeFilter);
+}
+
+function renderHeader() {
+  const latest = LOG_DATA[0];
+  document.getElementById('headerMeta').innerHTML =
+    `${LOG_DATA.length} of <span>${TOTAL_EVENTS}</span> events &nbsp;&middot;&nbsp; Last updated <span>${fmtDateTime(latest.createdOn)}</span>`;
+}
+
+function renderStats() {
+  const published  = LOG_DATA.filter(e => e.event === 'site_published').length;
+  const pages      = LOG_DATA.filter(e => e.event === 'page_created').length;
+  const components = LOG_DATA.filter(e => e.event === 'symbols_modified').length;
+  const styles     = LOG_DATA.filter(e => e.event === 'styles_modified').length;
+  const backups    = LOG_DATA.filter(e => e.event === 'backup_created').length;
+  const days       = new Set(LOG_DATA.map(e => dayKey(e.createdOn))).size;
+
+  const cards = [
+    { label: 'Total events',     value: LOG_DATA.length, sub: `of ${TOTAL_EVENTS} total`,  accent: '#f5a623' },
+    { label: 'Active days',      value: days,            sub: 'in this dataset',            accent: '#5bbdbd' },
+    { label: 'Publishes',        value: published,       sub: 'site_published',             accent: '#c97ab2' },
+    { label: 'Pages created',    value: pages,           sub: 'page_created',               accent: '#5bbdbd' },
+    { label: 'Component saves',  value: components,      sub: 'symbols_modified',           accent: '#5b9bd5' },
+    { label: 'Styles created',   value: styles,          sub: 'styles_modified',            accent: '#6ab187' },
+    { label: 'Auto backups',     value: backups,         sub: 'backup_created',             accent: '#888882' },
+  ];
+
+  document.getElementById('statsGrid').innerHTML = cards.map((c, i) => `
+    <div class="stat-card fade-in" style="--accent:${c.accent}; animation-delay:${i * 0.05}s">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-value">${c.value}</div>
+      <div class="stat-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+function renderBarChart() {
+  const counts = countBy(LOG_DATA, e => e.event);
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0][1];
+
+  document.getElementById('barChart').innerHTML = sorted.map(([evt, count], i) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${evt}">${evt}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(count / max * 100)}%; --bar-color:${eventColor(evt)}; --delay:${i * 0.06}s;"></div>
+      </div>
+      <div class="bar-count">${count}</div>
+    </div>
+  `).join('');
+}
+
+function renderFilters() {
+  const eventTypes = [...new Set(LOG_DATA.map(e => e.event))].sort();
+  const allBtn = `<button class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">all</button>`;
+  const typeBtns = eventTypes.map(t =>
+    `<button class="filter-btn ${activeFilter === t ? 'active' : ''}" data-filter="${t}">${t.replace(/_/g, ' ')}</button>`
+  ).join('');
+  document.getElementById('filters').innerHTML = allBtn + typeBtns;
+}
+
+function renderTable() {
+  const data = filteredData();
+  document.getElementById('tableCount').textContent = `${data.length} events`;
+
+  const opClass = op => {
+    if (op === 'CREATED')   return 'op-created';
+    if (op === 'MODIFIED')  return 'op-modified';
+    if (op === 'PUBLISHED') return 'op-published';
+    return '';
+  };
+
+  document.getElementById('logTableBody').innerHTML = data.map(e => {
+    const name = e.resourceName || (e.payload && e.payload.pageTitle) || '—';
+    const user = e.user ? e.user.displayName : '<span style="color:var(--muted)">system</span>';
+    return `
+      <tr>
+        <td class="ts">${fmtDateTime(e.createdOn)}</td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:${eventColor(e.event)}">${e.event}</span></td>
+        <td><span class="event-badge ${opClass(e.resourceOperation)}">${e.resourceOperation}</span></td>
+        <td><div class="resource-name">${name}</div></td>
+        <td style="color:var(--muted);font-size:12px;">${user}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderTimeline() {
+  const byDay = {};
+  LOG_DATA.forEach(e => {
+    const d = dayKey(e.createdOn);
+    if (!byDay[d]) byDay[d] = [];
+    byDay[d].push(e);
+  });
+
+  const allDays = Object.keys(byDay).sort().reverse();
+  const totalPages = Math.ceil(allDays.length / TIMELINE_PAGE_SIZE);
+  timelinePage = Math.min(timelinePage, totalPages - 1);
+  const days = allDays.slice(timelinePage * TIMELINE_PAGE_SIZE, (timelinePage + 1) * TIMELINE_PAGE_SIZE);
+
+  document.getElementById('timeline').innerHTML = days.map(day => {
+    const events = byDay[day];
+    const typeCounts = countBy(events, e => e.event);
+    const summary = Object.entries(typeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([evt, n]) => `
+        <div class="timeline-event">
+          <div class="event-dot" style="--dot-color:${eventColor(evt)}"></div>
+          <div>
+            <div class="event-desc">${evt.replace(/_/g, ' ')} <span style="color:var(--muted)">&times;${n}</span></div>
+          </div>
+        </div>
+      `).join('');
+
+    const label = new Date(day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `
+      <div class="timeline-day">
+        <div class="timeline-date">${label} &mdash; ${events.length} events</div>
+        <div class="timeline-events">${summary}</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('timelinePager').innerHTML = `
+    <button class="pager-btn" data-page="${timelinePage - 1}" ${timelinePage === 0 ? 'disabled' : ''}>&larr;</button>
+    <span>${timelinePage + 1} / ${totalPages}</span>
+    <button class="pager-btn" data-page="${timelinePage + 1}" ${timelinePage >= totalPages - 1 ? 'disabled' : ''}>&rarr;</button>
+  `;
+}
+
+function renderUsers() {
+  const userCounts = {};
+  LOG_DATA.forEach(e => {
+    const name = e.user ? e.user.displayName : 'System';
+    userCounts[name] = (userCounts[name] || 0) + 1;
+  });
+
+  document.getElementById('userList').innerHTML = Object.entries(userCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => {
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      return `
+        <div class="user-row">
+          <div class="user-avatar">${initials}</div>
+          <div class="user-name">${name}</div>
+          <div class="user-count">${count}</div>
+        </div>
+      `;
+    }).join('');
+}
+
+document.addEventListener('click', e => {
+  const filterBtn = e.target.closest('[data-filter]');
+  if (filterBtn) {
+    activeFilter = filterBtn.dataset.filter;
+    renderFilters();
+    renderTable();
+    return;
+  }
+  const pagerBtn = e.target.closest('[data-page]');
+  if (pagerBtn && !pagerBtn.disabled) {
+    timelinePage = parseInt(pagerBtn.dataset.page, 10);
+    renderTimeline();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const siteId = new URLSearchParams(window.location.search).get('siteId');
+  let dataReq = await fetch(`/api.json?siteId=${siteId}`);
+  LOG_DATA = (await dataReq.json()).logs;
+  TOTAL_EVENTS = LOG_DATA.length;
+
+  renderHeader();
+  renderStats();
+  renderBarChart();
+  renderFilters();
+  renderTable();
+  renderTimeline();
+  renderUsers();
+}, false);
+
+</script>

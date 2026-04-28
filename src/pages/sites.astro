@@ -1,0 +1,56 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const token = Astro.locals.access_token;
+
+const getSites = async () => {
+   let req = await fetch('https://api.webflow.com/v2/sites', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+    });
+    return (await req.json()).sites;
+}
+
+// TODO: replace with real sites from session/API
+const sites = await getSites(token); 
+---
+
+<BaseLayout pageTitle="Select a Site" bodyClass="login">
+
+  <div class="site-picker-card">
+
+    <div class="wordmark">
+      <div class="wordmark-title">Site Activity Log Viewer</div>
+      <div class="wordmark-sub">Site audit &amp; reporting tool</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="site-picker-intro">
+      <div class="site-picker-heading">Choose a site</div>
+      <div class="site-picker-sub">{sites.length} site{sites.length !== 1 ? 's' : ''} available in your account</div>
+    </div>
+
+    <ul class="site-list">
+      {sites.map((site) => (
+        <li class="fade-in">
+          <a href={`/dashboard?siteId=${site.id}&siteName=${encodeURIComponent(site.displayName)}`} class="site-item">
+            <div class="site-item-icon">{site.displayName.charAt(0).toUpperCase()}</div>
+            <div class="site-item-info">
+              <div class="site-item-name">{site.displayName}</div>
+              <div class="site-item-meta">last published {site.lastPublished}</div>
+            </div>
+            <div class="site-item-arrow">&#8594;</div>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="login-note">
+      Only enterprise sites support the activity log API.
+    </div>
+
+  </div>
+
+</BaseLayout>
