@@ -507,6 +507,7 @@ body.login::before {
   color: var(--muted);
   letter-spacing: 0.06em;
   opacity: 0.5;
+  text-align: center;
 }
 
 /* ── SITE PICKER CARD ── */
