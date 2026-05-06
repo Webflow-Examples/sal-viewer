@@ -4,7 +4,7 @@
 const CLIENT_ID = import.meta.env.CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.CLIENT_SECRET;
 */
-//import { CLIENT_ID, CLIENT_SECRET } from 'astro:env/server';
+import { CLIENT_ID, CLIENT_SECRET } from 'astro:env/server';
 const REDIRECT_URL = import.meta.env.REDIRECT_URL;
 
 const code = Astro.url.searchParams.get('code') || '';
