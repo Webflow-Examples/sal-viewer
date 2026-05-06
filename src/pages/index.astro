@@ -1,13 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { env } from "cloudflare:workers";
 
-//const CLIENT_ID = import.meta.env.CLIENT_ID;
 /*
 The env values in prod are encrypted and can't be loaded via the import.
 I'm still unsure about this.
 */
-const CLIENT_ID = env.CLIENT_ID;
+import { CLIENT_ID } from 'astro:env/server';
 const REDIRECT_URL = import.meta.env.REDIRECT_URL;
 
 const getAuthURL = () => {
