@@ -12,8 +12,8 @@
 	},
 	"kv_namespaces": [
 		{
-			"binding": "SESSION",
-			"id": ""
+			"binding": "SESSIONS",
+			"id": "local"
 		}
 	]
 }
