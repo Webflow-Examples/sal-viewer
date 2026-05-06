@@ -10,19 +10,13 @@ const getAuthURL = () => {
   	params.set('redirect_url', REDIRECT_URL);
   	params.set('response_type','code');
   	params.set('scope','sites:read site_activity:read');
+    console.log(CLIENT_ID, REDIRECT_URL);
   	let url = 'https://webflow.com/oauth/authorize?' + params.toString();
 	return url;
 }
 
 let error = await Astro.session?.get('error');
 console.log('error', error);
-
-// temp shit
-let hits = await Astro.session?.get('hits');
-if(!hits) hits = 0;
-
-Astro.session?.set('hits', ++hits);
-console.log(hits);
 ---
 
 <BaseLayout pageTitle="Site Activity Log Viewer" bodyClass="login">
