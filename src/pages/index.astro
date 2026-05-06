@@ -1,7 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { env } from "cloudflare:workers";
 
-const CLIENT_ID = import.meta.env.CLIENT_ID;
+//const CLIENT_ID = import.meta.env.CLIENT_ID;
+/*
+The env values in prod are encrypted and can't be loaded via the import.
+I'm still unsure about this.
+*/
+const CLIENT_ID = env.CLIENT_ID;
 const REDIRECT_URL = import.meta.env.REDIRECT_URL;
 
 const getAuthURL = () => {
@@ -10,7 +16,6 @@ const getAuthURL = () => {
   	params.set('redirect_url', REDIRECT_URL);
   	params.set('response_type','code');
   	params.set('scope','sites:read site_activity:read');
-    console.log(CLIENT_ID, REDIRECT_URL);
   	let url = 'https://webflow.com/oauth/authorize?' + params.toString();
 	return url;
 }
