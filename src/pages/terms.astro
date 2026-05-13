@@ -1,0 +1,55 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout pageTitle="Privacy" bodyClass="login">
+
+<style>
+    body.login {
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    body.login > h1,
+    body.login > h2,
+    body.login > p,
+    body.login > ul {
+        max-width: 720px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<h1>Terms and Conditions</h1>
+
+<p>Last Updated: May 13, 2026</p>
+    <h2>1. Acceptance of Terms</h2>
+    <p>By accessing or using this application, you agree to be bound by these Terms and Conditions. If you do not agree, do not use this application.</p>
+ 
+    <h2>2. Disclaimer of Warranties</h2>
+    <p>This application is provided <strong>"as is"</strong> and <strong>"as available"</strong>, without warranty of any kind, express or implied. To the fullest extent permitted by applicable law, we disclaim all warranties, including but not limited to:</p>
+    <ul>
+      <li>Implied warranties of merchantability, fitness for a particular purpose, and non-infringement</li>
+      <li>Warranties that the application will be uninterrupted, error-free, or free of viruses or other harmful components</li>
+      <li>Warranties regarding the accuracy, reliability, completeness, or timeliness of any content or results produced by the application</li>
+    </ul>
+    <p>You use this application entirely at your own risk. We make no guarantee that it will meet your requirements or produce any particular outcome.</p>
+
+    <h2>3. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, we shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages arising out of or related to your use of, or inability to use, this application — even if we have been advised of the possibility of such damages.</p>
+ 
+    <h2>4. No Professional Advice</h2>
+    <p>Nothing in this application constitutes legal, financial, medical, or any other form of professional advice. You should not rely on any content produced by this application as a substitute for professional consultation.</p>
+ 
+    <h2>5. Changes to These Terms</h2>
+    <p>We reserve the right to modify these Terms and Conditions at any time. Changes take effect when posted. Your continued use of the application after any changes constitutes acceptance of the updated terms.</p>
+ 
+    <h2>6. Governing Law</h2>
+    <p>These Terms shall be governed by and construed in accordance with the laws of the applicable jurisdiction, without regard to its conflict of law provisions.</p>
+
+</BaseLayout>

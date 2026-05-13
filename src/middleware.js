@@ -6,6 +6,7 @@ export async function onRequest (context, next) {
         || context.url.pathname.endsWith('/callback') 
         || context.url.pathname.endsWith('/index.html')
         || context.url.pathname.endsWith('/privacy.html')
+        || context.url.pathname.endsWith('/terms.html')
     ) return next();
 
     console.log('need to check stuff', context.url.pathname);
